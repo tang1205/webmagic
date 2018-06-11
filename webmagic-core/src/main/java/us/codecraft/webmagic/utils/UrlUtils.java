@@ -22,11 +22,11 @@ public class UrlUtils {
 
     /**
      * canonicalizeUrl
-     * <p/>
+     * <br>
      * Borrowed from Jsoup.
      *
-     * @param url
-     * @param refer
+     * @param url url
+     * @param refer refer
      * @return canonicalizeUrl
      */
     public static String canonicalizeUrl(String url, String refer) {
@@ -47,6 +47,21 @@ public class UrlUtils {
         } catch (MalformedURLException e) {
             return "";
         }
+    }
+
+    /**
+     *
+     * @param url url
+     * @return new url
+     * @deprecated
+     */
+    public static String encodeIllegalCharacterInUrl(String url) {
+        return url.replace(" ", "%20");
+    }
+
+    public static String fixIllegalCharacterInUrl(String url) {
+        //TODO more charator support
+        return url.replace(" ", "%20").replaceAll("#+", "#");
     }
 
     public static String getHost(String url) {
@@ -70,23 +85,16 @@ public class UrlUtils {
         if (i > 0) {
             domain = StringUtils.substring(domain, 0, i);
         }
-        return domain;
+        return removePort(domain);
     }
 
-    private static Pattern patternForHref = Pattern.compile("(<a[^<>]*href=)[\"']{0,1}([^\"'<>\\s]*)[\"']{0,1}", Pattern.CASE_INSENSITIVE);
-
-    public static String fixAllRelativeHrefs(String html, String url) {
-        StringBuilder stringBuilder = new StringBuilder();
-        Matcher matcher = patternForHref.matcher(html);
-        int lastEnd = 0;
-        while (matcher.find()) {
-            stringBuilder.append(StringUtils.substring(html, lastEnd, matcher.start()));
-            stringBuilder.append(matcher.group(1));
-            stringBuilder.append("\"").append(canonicalizeUrl(matcher.group(2), url)).append("\"");
-            lastEnd = matcher.end();
+    public static String removePort(String domain) {
+        int portIndex = domain.indexOf(":");
+        if (portIndex != -1) {
+            return domain.substring(0, portIndex);
+        }else {
+            return domain;
         }
-        stringBuilder.append(StringUtils.substring(html, lastEnd));
-        return stringBuilder.toString();
     }
 
     public static List<Request> convertToRequests(Collection<String> urls) {
@@ -105,7 +113,7 @@ public class UrlUtils {
         return urlList;
     }
 
-    private static final Pattern patternForCharset = Pattern.compile("charset\\s*=\\s*['\"]*([^\\s;'\"]*)");
+    private static final Pattern patternForCharset = Pattern.compile("charset\\s*=\\s*['\"]*([^\\s;'\"]*)", Pattern.CASE_INSENSITIVE);
 
     public static String getCharset(String contentType) {
         Matcher matcher = patternForCharset.matcher(contentType);

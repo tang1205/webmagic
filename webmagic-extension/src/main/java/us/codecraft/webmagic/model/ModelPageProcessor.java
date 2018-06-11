@@ -7,9 +7,7 @@ import us.codecraft.webmagic.processor.PageProcessor;
 import us.codecraft.webmagic.selector.Selector;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,7 +23,7 @@ class ModelPageProcessor implements PageProcessor {
 
     private Site site;
 
-    private Set<Pattern> targetUrlPatterns = new HashSet<Pattern>();
+    private boolean extractLinks = true;
 
     public static ModelPageProcessor create(Site site, Class... clazzs) {
         ModelPageProcessor modelPageProcessor = new ModelPageProcessor(site);
@@ -38,8 +36,6 @@ class ModelPageProcessor implements PageProcessor {
 
     public ModelPageProcessor addPageModel(Class clazz) {
         PageModelExtractor pageModelExtractor = PageModelExtractor.create(clazz);
-        targetUrlPatterns.addAll(pageModelExtractor.getTargetUrlPatterns());
-        targetUrlPatterns.addAll(pageModelExtractor.getHelpUrlPatterns());
         pageModelExtractorList.add(pageModelExtractor);
         return this;
     }
@@ -51,14 +47,19 @@ class ModelPageProcessor implements PageProcessor {
     @Override
     public void process(Page page) {
         for (PageModelExtractor pageModelExtractor : pageModelExtractorList) {
-            extractLinks(page, pageModelExtractor.getHelpUrlRegionSelector(), pageModelExtractor.getHelpUrlPatterns());
-            extractLinks(page, pageModelExtractor.getTargetUrlRegionSelector(), pageModelExtractor.getTargetUrlPatterns());
+            if (extractLinks) {
+                extractLinks(page, pageModelExtractor.getHelpUrlRegionSelector(), pageModelExtractor.getHelpUrlPatterns());
+                extractLinks(page, pageModelExtractor.getTargetUrlRegionSelector(), pageModelExtractor.getTargetUrlPatterns());
+            }
             Object process = pageModelExtractor.process(page);
             if (process == null || (process instanceof List && ((List) process).size() == 0)) {
-                page.getResultItems().setSkip(true);
+                continue;
             }
             postProcessPageModel(pageModelExtractor.getClazz(), process);
             page.putField(pageModelExtractor.getClazz().getCanonicalName(), process);
+        }
+        if (page.getResultItems().getAll().size() == 0) {
+            page.getResultItems().setSkip(true);
         }
     }
 
@@ -67,13 +68,13 @@ class ModelPageProcessor implements PageProcessor {
         if (urlRegionSelector == null) {
             links = page.getHtml().links().all();
         } else {
-            links = urlRegionSelector.selectList(page.getHtml().toString());
+            links = page.getHtml().selectList(urlRegionSelector).links().all();
         }
         for (String link : links) {
             for (Pattern targetUrlPattern : urlPatterns) {
                 Matcher matcher = targetUrlPattern.matcher(link);
                 if (matcher.find()) {
-                    page.addTargetRequest(new Request(matcher.group(1)));
+                    page.addTargetRequest(new Request(matcher.group(0)));
                 }
             }
         }
@@ -85,5 +86,13 @@ class ModelPageProcessor implements PageProcessor {
     @Override
     public Site getSite() {
         return site;
+    }
+
+    public boolean isExtractLinks() {
+        return extractLinks;
+    }
+
+    public void setExtractLinks(boolean extractLinks) {
+        this.extractLinks = extractLinks;
     }
 }

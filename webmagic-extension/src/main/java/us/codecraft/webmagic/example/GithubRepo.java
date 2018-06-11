@@ -19,7 +19,7 @@ import java.util.List;
 @HelpUrl({"https://github.com/\\w+\\?tab=repositories", "https://github.com/\\w+", "https://github.com/explore/*"})
 public class GithubRepo implements HasKey {
 
-    @ExtractBy(value = "//h1[@class='entry-title public']/strong/a/text()", notNull = true)
+    @ExtractBy(value = "//h1[@class='public']/strong/a/text()", notNull = true)
     private String name;
 
     @ExtractByUrl("https://github\\.com/(\\w+)/.*")
@@ -77,5 +77,18 @@ public class GithubRepo implements HasKey {
 
     public int getFork() {
         return fork;
+    }
+
+    @Override
+    public String toString() {
+        return "GithubRepo{" +
+                "name='" + name + '\'' +
+                ", author='" + author + '\'' +
+                ", readme='" + readme + '\'' +
+                ", language=" + language +
+                ", star=" + star +
+                ", fork=" + fork +
+                ", url='" + url + '\'' +
+                '}';
     }
 }

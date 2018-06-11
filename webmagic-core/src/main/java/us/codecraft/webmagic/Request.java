@@ -1,5 +1,6 @@
 package us.codecraft.webmagic;
 
+import us.codecraft.webmagic.model.HttpRequestBody;
 import us.codecraft.webmagic.utils.Experimental;
 
 import java.io.Serializable;
@@ -21,10 +22,21 @@ public class Request implements Serializable {
 
     private String url;
 
+    private String method;
+
+    private HttpRequestBody requestBody;
+
     /**
      * Store additional information in extras.
      */
     private Map<String, Object> extras;
+
+    /**
+     * cookies for current url, if not set use Site's cookies
+     */
+    private Map<String, String> cookies = new HashMap<String, String>();
+
+    private Map<String, String> headers = new HashMap<String, String>();
 
     /**
      * Priority of the request.<br>
@@ -32,6 +44,14 @@ public class Request implements Serializable {
      * @see us.codecraft.webmagic.scheduler.PriorityScheduler
      */
     private long priority;
+
+    /**
+     * When it is set to TRUE, the downloader will not try to parse response body to text.
+     *
+     */
+    private boolean binaryContent = false;
+
+    private String charset;
 
     public Request() {
     }
@@ -49,7 +69,7 @@ public class Request implements Serializable {
      * Need a scheduler supporting priority.<br>
      * @see us.codecraft.webmagic.scheduler.PriorityScheduler
      *
-     * @param priority
+     * @param priority priority
      * @return this
      */
     @Experimental
@@ -77,6 +97,42 @@ public class Request implements Serializable {
         return url;
     }
 
+    public Map<String, Object> getExtras() {
+        return extras;
+    }
+
+    public Request setExtras(Map<String, Object> extras) {
+        this.extras = extras;
+        return this;
+    }
+
+    public Request setUrl(String url) {
+        this.url = url;
+        return this;
+    }
+
+    /**
+     * The http method of the request. Get for default.
+     * @return httpMethod
+     * @see us.codecraft.webmagic.utils.HttpConstant.Method
+     * @since 0.5.0
+     */
+    public String getMethod() {
+        return method;
+    }
+
+    public Request setMethod(String method) {
+        this.method = method;
+        return this;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = url != null ? url.hashCode() : 0;
+        result = 31 * result + (method != null ? method.hashCode() : 0);
+        return result;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -84,34 +140,64 @@ public class Request implements Serializable {
 
         Request request = (Request) o;
 
-        if (!url.equals(request.url)) return false;
-
-        return true;
+        if (url != null ? !url.equals(request.url) : request.url != null) return false;
+        return method != null ? method.equals(request.method) : request.method == null;
     }
 
-    public Map<String, Object> getExtras() {
-        return extras;
+    public Request addCookie(String name, String value) {
+        cookies.put(name, value);
+        return this;
     }
 
-    @Override
-    public int hashCode() {
-        return url.hashCode();
+    public Request addHeader(String name, String value) {
+        headers.put(name, value);
+        return this;
     }
 
-    public void setExtras(Map<String, Object> extras) {
-        this.extras = extras;
+    public Map<String, String> getCookies() {
+        return cookies;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public HttpRequestBody getRequestBody() {
+        return requestBody;
+    }
+
+    public void setRequestBody(HttpRequestBody requestBody) {
+        this.requestBody = requestBody;
+    }
+
+    public boolean isBinaryContent() {
+        return binaryContent;
+    }
+
+    public Request setBinaryContent(boolean binaryContent) {
+        this.binaryContent = binaryContent;
+        return this;
+    }
+
+    public String getCharset() {
+        return charset;
+    }
+
+    public Request setCharset(String charset) {
+        this.charset = charset;
+        return this;
     }
 
     @Override
     public String toString() {
         return "Request{" +
                 "url='" + url + '\'' +
+                ", method='" + method + '\'' +
                 ", extras=" + extras +
                 ", priority=" + priority +
+                ", headers=" + headers +
+                ", cookies="+ cookies+
                 '}';
     }
+
 }
